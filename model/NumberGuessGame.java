@@ -4,15 +4,17 @@ import java.util.Random;
 
 public class NumberGuessGame {
 	public static final int MAX_KEY = 100;
+	public static final int MAX_ATTEMPTS = 10;
 	
 	private int key;
 	private int guess;
 	private boolean showKeyOn;
 	private int attempts;
 	public String progressMessage;
-	// state and strategy
+	// state and strategy and attempt mode
 	private GameState state;
 	private PlayStrategy strategy;
+	private AttemptMode attemptMode = AttemptMode.UNLIMITED;
 
 	public NumberGuessGame() {
 		this.state = GameState.INIT;
@@ -50,7 +52,9 @@ public class NumberGuessGame {
 			// this should not happen if UI is implemented correctly
 			throw new IllegalArgumentException("Guess must be between 1 and " + MAX_KEY);
 		}
+
 		++this.attempts;
+
 		if (strategy == PlayStrategy.HighLow) {
 			playHighLow(guess);
 
@@ -60,6 +64,17 @@ public class NumberGuessGame {
 		} else {
 			throw new IllegalStateException ("Unknown strategy: " + strategy);
 		}
+
+		if (attemptMode == AttemptMode.TEN_ATTEMPTS // attempt mode is 10 attempts
+			&& attempts >= MAX_ATTEMPTS // attempt reached limit
+			&& guess != key) { //guess is not key
+				progressMessage = "You Lose! The key was " + key;
+				state = GameState.OVER;
+		} else if (attemptMode == AttemptMode.TEN_ATTEMPTS
+			&& attempts == MAX_ATTEMPTS - 1
+			&& guess != key) {
+				progressMessage = "Last attempt! " + progressMessage;
+			}
 
 	}
 
@@ -101,6 +116,16 @@ public class NumberGuessGame {
 		}
 		
 	}
+
+	public AttemptMode getAttemptMode() {
+		return attemptMode;
+	}
+
+	public void setAttempMode(AttemptMode attemptMode) {
+		this.attemptMode = attemptMode;
+	}
+
+
 
 	public int getAttempts() {
 		return attempts;

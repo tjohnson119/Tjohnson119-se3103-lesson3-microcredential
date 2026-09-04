@@ -19,6 +19,7 @@ import controller.NumberEnterListener;
 import controller.ShowKeyButtonListener;
 import model.GameState;
 import model.PlayStrategy;
+import model.AttemptMode;
 
 public class AppWindow extends JFrame{
 
@@ -27,12 +28,16 @@ public class AppWindow extends JFrame{
 	private JCheckBox showKeybutton;
 	private JRadioButton highLowButton;
 	private JRadioButton closerAwayButton;
+	private JRadioButton unlimitedButton;
+	private JRadioButton tenAttemptsButton;
 	private JButton newGameButton;
 	private JButton exitButton;
 	public static final String HIGH_LOW_ACTION = "High/Low";
 	public static final String CLOSER_AWAY_ACTION = "Closer/Away";
 	public static final String NEW_GAME_ACTION = "New Game";
 	public static final String EXIT_ACTION = "Exit";
+	public static final String UNLIMITED_ATTEMPTS_ACTION = "Unlimited";
+	public static final String TEN_ATTEMPTS_ACTION = "10 Attempts";
 
 
 	public void init() {
@@ -45,7 +50,8 @@ public class AppWindow extends JFrame{
 
 		JPanel southPanel = new JPanel();
 		cp.add(southPanel, BorderLayout.SOUTH);
-		southPanel.setLayout(new GridLayout(3, 1));
+		southPanel.setLayout(new GridLayout(4, 1));
+
 
 		JPanel numberPanel = new JPanel();
 		southPanel.add(numberPanel);
@@ -69,6 +75,19 @@ public class AppWindow extends JFrame{
 		strategyGroup.add(highLowButton);
 		strategyGroup.add(closerAwayButton);
 
+		// attempts panel
+		JPanel attemptsPanel = new JPanel();
+		southPanel.add(attemptsPanel);
+		attemptsPanel.setBorder(new TitledBorder("Select Attempts"));
+		unlimitedButton = new JRadioButton("Unlimited", App.gameModel.getAttemptMode() == AttemptMode.UNLIMITED);
+		tenAttemptsButton = new JRadioButton("10 Attempts", App.gameModel.getAttemptMode() == AttemptMode.TEN_ATTEMPTS);
+		attemptsPanel.add(unlimitedButton);
+		attemptsPanel.add(tenAttemptsButton);
+
+		ButtonGroup attemptsGroup = new ButtonGroup();
+		attemptsGroup.add(unlimitedButton);
+		attemptsGroup.add(tenAttemptsButton);
+
 		// action panel
 		JPanel actionPanel = new JPanel();
 		southPanel.add(actionPanel);
@@ -89,6 +108,8 @@ public class AppWindow extends JFrame{
 
 		showKeybutton.addItemListener(new ShowKeyButtonListener());
 		numberField.addActionListener(new NumberEnterListener());
+		unlimitedButton.addActionListener(actionListener);
+		tenAttemptsButton.addActionListener(actionListener);
 
 		updateWindow();
 
@@ -101,6 +122,8 @@ public class AppWindow extends JFrame{
 		numberField.setEnabled(state == GameState.PLAYING);
 		highLowButton.setEnabled(state != GameState.PLAYING);
 		closerAwayButton.setEnabled(state != GameState.PLAYING);
+		unlimitedButton.setEnabled(state != GameState.PLAYING);
+		tenAttemptsButton.setEnabled(state != GameState.PLAYING);
 
 		// always enabled:show key, exit button
 

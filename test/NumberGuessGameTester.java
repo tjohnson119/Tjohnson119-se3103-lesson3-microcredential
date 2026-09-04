@@ -3,6 +3,7 @@ package test;
 import model.GameState;
 import model.NumberGuessGame;
 import model.PlayStrategy;
+import model.AttemptMode;
 
 public class NumberGuessGameTester {
 
@@ -10,6 +11,8 @@ public class NumberGuessGameTester {
         testConstructorInitialState();
         testStartResetsGame();
         testInvalidGuessThrows();
+        testBoundaryGuessesAreAccepted();
+        testAttemptsIncrementForEachGuess();
         testHighLowBelowKey();
         testHighLowAboveKey();
         testHighLowExactGuessWins();
@@ -17,6 +20,11 @@ public class NumberGuessGameTester {
         testCloserAwayCloserGuess();
         testCloserAwayAwayGuess();
         testCloserAwaySameDistanceGuess();
+        testCloserAwayExactGuessWins();
+        testUnlimitedAttemptMode();
+        testTenAttemptModeWarnsOnLastAttempt();
+        testTenAttemptModeLosesAfterTenthMiss();
+        testTenAttemptModeCanWinOnLastAttempt();
         testUnknownStrategyThrows();
         testSettersAndToString();
 
@@ -55,10 +63,47 @@ public class NumberGuessGameTester {
 
     private static void testInvalidGuessThrows() {
         NumberGuessGame game = new NumberGuessGame();
+        game.setState(GameState.PLAYING);
 
         expectIllegalArgument(game, 0, "Guess below the valid range should fail");
         expectIllegalArgument(game, 101, "Guess above the valid range should fail");
         expectIllegalArgument(game, -1, "Negative guess should fail");
+        check(game.getAttempts() == 0, "Invalid guesses should not count as attempts");
+        check(game.getGuess() == -1, "Invalid guesses should not update the guess");
+    }
+
+    private static void testBoundaryGuessesAreAccepted() {
+        NumberGuessGame game = new NumberGuessGame();
+        game.setKey(100);
+        game.setState(GameState.PLAYING);
+
+        game.play(1);
+
+        check(game.getAttempts() == 1, "The minimum valid guess should count");
+        check(game.getGuess() == 1, "The minimum valid guess should be stored");
+        check(game.progressMessage.equals("\u26a1 Go Higher!"),
+                "The minimum valid guess should receive high/low feedback");
+
+        game.setKey(1);
+        game.setState(GameState.PLAYING);
+        game.play(100);
+
+        check(game.getGuess() == 100, "The maximum valid guess should be stored");
+        check(game.progressMessage.equals("\u26a1 Go Lower!"),
+                "The maximum valid guess should receive high/low feedback");
+    }
+
+    private static void testAttemptsIncrementForEachGuess() {
+        NumberGuessGame game = new NumberGuessGame();
+        game.setKey(100);
+        game.setState(GameState.PLAYING);
+
+        game.play(10);
+        game.play(20);
+        game.play(30);
+
+        check(game.getAttempts() == 3, "Each valid guess should increment attempts");
+        check(game.getGuess() == 30, "The most recent guess should be retained");
     }
 
     private static void testHighLowBelowKey() {
@@ -156,6 +201,95 @@ public class NumberGuessGameTester {
         check(game.progressMessage.equals("\u26a1 Same distance!"),
                 "Equal distance should report Same distance!");
     }
+
+            private static void testCloserAwayExactGuessWins() {
+            NumberGuessGame game = new NumberGuessGame();
+            game.setStrategy(PlayStrategy.CloserAway);
+            game.setKey(50);
+            game.setState(GameState.PLAYING);
+
+            game.play(40);
+            game.play(50);
+
+            check(game.getAttempts() == 2, "A closer-away win should count both guesses");
+            check(game.getState() == GameState.OVER, "An exact closer-away guess should end the game");
+            check(game.getGuess() == 50, "An exact closer-away guess should be stored");
+            check(game.progressMessage.contains("Got it! The key was 50"),
+                "Closer-away winning message should include the key");
+            }
+
+            private static void testUnlimitedAttemptMode() {
+            NumberGuessGame game = new NumberGuessGame();
+            game.setAttempMode(AttemptMode.UNLIMITED);
+            game.setKey(100);
+            game.setState(GameState.PLAYING);
+
+            for (int guess = 1; guess <= NumberGuessGame.MAX_ATTEMPTS; guess++) {
+                game.play(guess);
+            }
+
+            check(game.getAttemptMode() == AttemptMode.UNLIMITED,
+                "Unlimited mode should remain selected");
+            check(game.getAttempts() == NumberGuessGame.MAX_ATTEMPTS,
+                "Unlimited mode should allow ten attempts");
+            check(game.getState() == GameState.PLAYING,
+                "Unlimited mode should not end after ten misses");
+            }
+
+            private static void testTenAttemptModeWarnsOnLastAttempt() {
+            NumberGuessGame game = new NumberGuessGame();
+            game.setAttempMode(AttemptMode.TEN_ATTEMPTS);
+            game.setKey(100);
+            game.setState(GameState.PLAYING);
+
+            for (int guess = 1; guess < NumberGuessGame.MAX_ATTEMPTS; guess++) {
+                game.play(guess);
+            }
+
+            check(game.getAttempts() == NumberGuessGame.MAX_ATTEMPTS - 1,
+                "The warning should occur after nine attempts");
+            check(game.getState() == GameState.PLAYING,
+                "The game should still be playing before the final attempt");
+            check(game.progressMessage.startsWith("Last attempt!"),
+                "The ninth miss should warn that only one attempt remains");
+            }
+
+            private static void testTenAttemptModeLosesAfterTenthMiss() {
+            NumberGuessGame game = new NumberGuessGame();
+            game.setAttempMode(AttemptMode.TEN_ATTEMPTS);
+            game.setKey(100);
+            game.setState(GameState.PLAYING);
+
+            for (int guess = 1; guess <= NumberGuessGame.MAX_ATTEMPTS; guess++) {
+                game.play(guess);
+            }
+
+            check(game.getAttempts() == NumberGuessGame.MAX_ATTEMPTS,
+                "The tenth guess should be counted");
+            check(game.getState() == GameState.OVER,
+                "Ten misses should end the limited game");
+            check(game.progressMessage.equals("You Lose! The key was 100"),
+                "The limited game should report the key after ten misses");
+            }
+
+            private static void testTenAttemptModeCanWinOnLastAttempt() {
+            NumberGuessGame game = new NumberGuessGame();
+            game.setAttempMode(AttemptMode.TEN_ATTEMPTS);
+            game.setKey(100);
+            game.setState(GameState.PLAYING);
+
+            for (int guess = 1; guess < NumberGuessGame.MAX_ATTEMPTS; guess++) {
+                game.play(guess);
+            }
+            game.play(100);
+
+            check(game.getAttempts() == NumberGuessGame.MAX_ATTEMPTS,
+                "The winning tenth guess should be counted");
+            check(game.getState() == GameState.OVER,
+                "Winning on the final attempt should end the game");
+            check(game.progressMessage.contains("Got it! The key was 100"),
+                "A final-attempt win should keep the winning message");
+            }
 
     private static void testUnknownStrategyThrows() {
         NumberGuessGame game = new NumberGuessGame();

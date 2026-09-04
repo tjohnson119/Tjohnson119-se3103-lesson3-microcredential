@@ -5,6 +5,7 @@ import java.awt.event.ActionListener;
 
 import model.PlayStrategy;
 import view.AppWindow;
+import model.AttemptMode;
 
 public class ActionButtonListener implements ActionListener{
 
@@ -19,7 +20,13 @@ public class ActionButtonListener implements ActionListener{
 			App.gameModel.setStrategy(PlayStrategy.HighLow);
 		} else if (command.equals(AppWindow.CLOSER_AWAY_ACTION)) {
 			App.gameModel.setStrategy(PlayStrategy.CloserAway);
-		} else {
+		} else if (command.equals(AppWindow.UNLIMITED_ATTEMPTS_ACTION)) {
+			App.gameModel.setAttempMode(AttemptMode.UNLIMITED);
+		}else if (command.equals(AppWindow.TEN_ATTEMPTS_ACTION)) {
+			App.gameModel.setAttempMode(AttemptMode.TEN_ATTEMPTS);
+		}
+		
+		else {
 			// should not happen if UI is implemented correctly
 			throw new IllegalArgumentException("Unknown action command: " + command);
 		}
